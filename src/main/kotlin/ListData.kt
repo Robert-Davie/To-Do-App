@@ -39,6 +39,7 @@ class ListData {
         tasks.addLast(taskIn)
         currentIDCount++
         tasks.sortBy { it.priority }
+        println("item ${taskIn.name} added")
     }
 
     fun deleteTask(name: String) {
