@@ -3,12 +3,6 @@ import java.io.FileWriter
 import java.io.IOException
 
 
-const val ESCAPE_SEQUENCE = "\u001B["
-const val RED_TEXT = "31m"
-const val BLACK_TEXT = "0m"
-const val GREEN_TEXT = "32m"
-const val BLUE_TEXT = "34m"
-
 fun main(){
     val listData = ListData()
     listData.addDefaultTasks()
@@ -19,6 +13,7 @@ fun main(){
             press 1 to view active tasks
             press 2 to view complete tasks
             press 3 to add task
+            press 4 to update task
             press 0 to quit
         """.trimIndent())
         val userInput = readlnOrNull()
@@ -32,6 +27,9 @@ fun main(){
             "3" -> {
                 addTask(listData)
             }
+            "4" -> {
+                updateTask(listData)
+            }
             "0" -> {
                 println("Application closed")
                 return
@@ -40,6 +38,53 @@ fun main(){
                 colourPrintLn("user command $userInput unknown", "RED")
             }
         }
+    }
+}
+
+fun updateTask(listData: ListData) {
+    val listSize = listData.tasks.size
+    for (i in 0..<listSize) {
+        println("$i ${listData.tasks[i].name}")
+    }
+    while(true){
+        colourPrintLn("Select number of which of task to update [or press q to quit]", "GREEN")
+        val input = readlnOrNull()
+        if (input == "q"){
+            return
+        }
+        if(input?.toIntOrNull() in 0..<listSize){
+            updateGivenTask(listData, input!!.toInt())
+            return
+        }
+    }
+}
+
+fun updateGivenTask(listData: ListData, position: Int) {
+    val oldTask = listData.tasks[position]
+
+    var currentName = oldTask.name
+    println("change current name: $currentName [y/n]")
+    if (readlnOrNull()=="y"){
+        println("enter new name")
+        currentName = readlnOrNull()!!
+    }
+
+    var currentDescription = oldTask.description
+    println("change current description: ${currentDescription ?: ""} [y/n]")
+    if (readlnOrNull()=="y"){
+        println("enter new description")
+        currentDescription = readlnOrNull()!!
+    }
+
+    var currentPriority = oldTask.priority
+    println("change current priority: $currentPriority [y/n]")
+    if (readlnOrNull()=="y"){
+        val newPriority = getPriorityForTaskFromUser()
+        if (newPriority == null) {
+            colourPrintLn("priority invalid, returning to main menu", "RED")
+            return
+        }
+        currentPriority = newPriority
     }
 }
 
@@ -52,15 +97,10 @@ fun addTask(dataIn: ListData) {
     }
     println("new task description [optional]")
     val newDescription = readlnOrNull()
-    println("task priority, pick number between 1(highest) and 5(lowest)")
-    val input3 = readlnOrNull()
-    try {
-        require(input3!!.toInt() in 1..5)
-    } catch (e: NumberFormatException) {
-        colourPrintLn("value cannot be converted to number, returning to main menu", "RED")
+    val newPriority = getPriorityForTaskFromUser()
+    if (newPriority == null){
+        colourPrintLn("input not valid priority, return to main menu", "RED")
         return
-    } catch (e: IllegalArgumentException) {
-        colourPrintLn("value must be between 1 and 5 inclusive","RED")
     }
     println("add due date [y/n]")
     if (readlnOrNull() == "y") {
@@ -70,7 +110,7 @@ fun addTask(dataIn: ListData) {
         iD = dataIn.currentIDCount + 1,
         name = newName,
         description = newDescription,
-        priority = input3!!.toInt(),
+        priority = newPriority,
         complete = false,
         dueDate = null
     )
@@ -78,7 +118,28 @@ fun addTask(dataIn: ListData) {
 }
 
 
+fun getPriorityForTaskFromUser(): Int?{
+    println("task priority, pick number between 1(highest) and 5(lowest)")
+    val input3 = readlnOrNull()
+    try {
+        val result = input3!!.toInt()
+        require(result in 1..5)
+        return result
+    } catch (e: NumberFormatException) {
+        colourPrintLn("value cannot be converted to number, returning to main menu", "RED")
+    } catch (e: IllegalArgumentException) {
+        colourPrintLn("value must be between 1 and 5 inclusive","RED")
+    }
+    return null
+}
+
+
 fun colourPrintLn(text:String, colour:String?) {
+    val ESCAPE_SEQUENCE = "\u001B["
+    val RED_TEXT = "31m"
+    val BLACK_TEXT = "0m"
+    val GREEN_TEXT = "32m"
+    val BLUE_TEXT = "34m"
     val colourSequence = when (colour) {
         "RED" -> RED_TEXT
         "GREEN" -> GREEN_TEXT
