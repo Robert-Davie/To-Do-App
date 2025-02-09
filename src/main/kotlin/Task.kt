@@ -2,9 +2,9 @@ import java.util.*
 
 data class Task (
     val iD: Int,
-    val name: String,
-    val description: String?,
-    val priority: Int,
+    var name: String,
+    var description: String?,
+    var priority: Int,
     var complete: Boolean,
-    val dueDate: Date?,
+    var dueDate: Date?,
 )
