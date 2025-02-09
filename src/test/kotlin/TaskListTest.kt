@@ -2,12 +2,12 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class ListDataTest {
-    lateinit var data: ListData
+class TaskListTest {
+    lateinit var data: TaskList
 
     @BeforeEach
     fun setUp(){
-        data = ListData()
+        data = TaskList()
     }
     @Test
     fun `given valid task, when one task is added, task appears in task list`() {

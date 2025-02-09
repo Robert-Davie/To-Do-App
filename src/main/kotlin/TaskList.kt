@@ -1,4 +1,4 @@
-class ListData {
+class TaskList {
     var title = ""
     var owner = ""
     var currentIDCount = 0

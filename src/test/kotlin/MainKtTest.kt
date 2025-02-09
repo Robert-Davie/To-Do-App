@@ -13,7 +13,7 @@ class MainKtTest {
         """.trimIndent()
         val inputStream = ByteArrayInputStream(input.toByteArray())
         System.setIn(inputStream)
-        val data = ListData()
+        val data = TaskList()
         addTask(data)
         System.setIn(System.`in`)
         assertTrue { data.tasks == mutableListOf(

@@ -3,9 +3,14 @@ import java.io.FileWriter
 import java.io.IOException
 
 
+object Settings {
+    var colourFormat: Boolean = true
+}
+
+
 fun main(){
-    val listData = ListData()
-    listData.addDefaultTasks()
+    val taskList = TaskList()
+    taskList.addDefaultTasks()
     while(true) {
         colourPrintLn("To do app menu", Colour.PURPLE)
         colourPrintLn("=".repeat(60), Colour.BLUE)
@@ -18,39 +23,43 @@ fun main(){
             5 to view a task
             6 to update a task
             7 to delete a task
+            9 to change settings
             0 to QUIT [or type q]
         """.trimIndent(), Colour.GREEN)
         colourPrintLn("=".repeat(60), Colour.BLUE)
         val userInput = readlnOrNull()
         when (userInput) {
             "1" -> {
-                if (listData.tasks.none { !it.complete }) {
+                if (taskList.tasks.none { !it.complete }) {
                     colourPrintLn("no incomplete tasks exist", Colour.RED)
                     continue
                 }
-                listData.prettyPrint(showComplete = false)
+                taskList.prettyPrint(showComplete = false)
             }
             "2" -> {
-                if (listData.tasks.none { it.complete }) {
+                if (taskList.tasks.none { it.complete }) {
                     colourPrintLn("no complete tasks exist", Colour.RED)
                     continue
                 }
-                listData.prettyPrint(showIncomplete = false)
+                taskList.prettyPrint(showIncomplete = false)
             }
             "3" -> {
-                markTaskComplete(listData)
+                markTaskComplete(taskList)
             }
             "4" -> {
-                addTask(listData)
+                addTask(taskList)
             }
             "5" -> {
-                viewTask(listData)
+                viewTask(taskList)
             }
             "6" -> {
-                updateTask(listData)
+                updateTask(taskList)
             }
             "7" -> {
-                deleteTask(listData)
+                deleteTask(taskList)
+            }
+            "9" -> {
+                changeSettings()
             }
             "0" -> {
                 println("Application closed")
@@ -67,6 +76,30 @@ fun main(){
     }
 }
 
+fun changeSettings() {
+    val isColourOnMessage = if (Settings.colourFormat) {
+        "ON"
+    } else {
+        "OFF"
+    }
+    println("""
+        type 1 to toggle text colour (currently $isColourOnMessage)
+        type q to return to main menu
+    """.trimIndent())
+    val input = readlnOrNull()
+    when(input) {
+        "1" -> {
+            Settings.colourFormat = !Settings.colourFormat
+            colourPrintLn("Colour format changed", Colour.BLUE)
+        }
+        "q" -> {
+            colourPrintLn("Returning to main menu", Colour.BLUE)
+            return
+        }
+        else -> colourPrintLn("Input not valid, returning to main menu", Colour.RED)
+    }
+}
+
 enum class Colour {
     RED,
     YELLOW,
@@ -75,24 +108,29 @@ enum class Colour {
     PURPLE,
 }
 
-fun deleteTask(listData: ListData) {
+fun deleteTask(taskList: TaskList) {
     val taskNumber = chooseTask(
-        listData,
-        "Select number of which task to delete",
+        taskList,
+        "Select number of which task to delete [or press q to cancel]",
     )
     if (taskNumber != null) {
-        listData.tasks.removeAt(taskNumber)
+        println("Type y confirm delete task ${taskList.tasks[taskNumber].name}")
+        if (readlnOrNull() == "y") {
+            taskList.tasks.removeAt(taskNumber)
+        } else {
+            colourPrintLn("Cancelling delete action", Colour.YELLOW)
+        }
     }
 }
 
-fun viewTask(listData: ListData) {
+fun viewTask(taskList: TaskList) {
     val taskNumber = chooseTask(
-        listData,
+        taskList,
         "Select number of which task to view",
         )
     println("=".repeat(40))
     if (taskNumber != null) {
-        val task = listData.tasks[taskNumber]
+        val task = taskList.tasks[taskNumber]
         colourPrintLn("   task name: ${task.name}", Colour.BLUE)
         colourPrintLn("     task ID: ${task.iD}", Colour.BLUE)
         colourPrintLn(" description: ${task.description}", Colour.BLUE)
@@ -102,33 +140,33 @@ fun viewTask(listData: ListData) {
     }
 }
 
-fun markTaskComplete(listData: ListData) {
+fun markTaskComplete(taskList: TaskList) {
     val taskPosition = chooseTask(
-        listData,
-        "Select number of which task to mark as complete [or press q to quit]",
+        taskList,
+        "Select number of which task to mark as complete [or press q to cancel]",
         showComplete = false
     )
-    val tasks = listData.tasks.filter { !it.complete }
+    val tasks = taskList.tasks.filter { !it.complete }
     if (taskPosition != null) {
         tasks[taskPosition].complete = true
     }
 }
 
-fun updateTask(listData: ListData) {
+fun updateTask(taskList: TaskList) {
     val taskPosition = chooseTask(
-        listData,
-        "Select number of which of task to update [or press q to quit]"
+        taskList,
+        "Select number of which of task to update [or press q to cancel]"
     )
     if (taskPosition != null) {
-        updateGivenTask(listData, taskPosition)
+        updateGivenTask(taskList, taskPosition)
     }
 }
 
-fun chooseTask(listData: ListData, message: String, showComplete: Boolean = true): Int? {
+fun chooseTask(taskList: TaskList, message: String, showComplete: Boolean = true): Int? {
     val tasks = if (showComplete) {
-        listData.tasks
+        taskList.tasks
     } else {
-        listData.tasks.filter { !it.complete } as MutableList<Task>
+        taskList.tasks.filter { !it.complete } as MutableList<Task>
     }
     val listSize = tasks.size
     if (listSize == 0) {
@@ -153,21 +191,21 @@ fun chooseTask(listData: ListData, message: String, showComplete: Boolean = true
     }
 }
 
-fun updateGivenTask(listData: ListData, position: Int) {
-    val oldTask = listData.tasks[position]
+fun updateGivenTask(taskList: TaskList, position: Int) {
+    val oldTask = taskList.tasks[position]
 
     val currentName = oldTask.name
     println("change current name: $currentName [y/n]")
     if (readlnOrNull()=="y"){
         println("enter new name")
-        listData.tasks[position].name = readlnOrNull()!!
+        taskList.tasks[position].name = readlnOrNull()!!
     }
 
     val currentDescription = oldTask.description
     println("change current description: ${currentDescription ?: ""} [y/n]")
     if (readlnOrNull()=="y"){
         println("enter new description")
-        listData.tasks[position].description = readlnOrNull()!!
+        taskList.tasks[position].description = readlnOrNull()!!
     }
 
     val currentPriority = oldTask.priority
@@ -178,19 +216,19 @@ fun updateGivenTask(listData: ListData, position: Int) {
             colourPrintLn("priority invalid, returning to main menu", Colour.RED)
             return
         }
-        listData.tasks[position].priority = newPriority
+        taskList.tasks[position].priority = newPriority
     }
 
     val currentComplete = oldTask.complete
     println("change current completeness: $currentComplete?[y/n]")
     if (readlnOrNull()=="y") {
-        listData.tasks[position].complete = !currentComplete
+        taskList.tasks[position].complete = !currentComplete
     }
 
     println("change date not yet supported")
 }
 
-fun addTask(dataIn: ListData) {
+fun addTask(dataIn: TaskList) {
     println("new task name")
     val newName = readlnOrNull()
     if (newName == "" || newName == null) {
@@ -199,11 +237,7 @@ fun addTask(dataIn: ListData) {
     }
     println("new task description [optional]")
     val newDescription = readlnOrNull()
-    val newPriority = getPriorityForTaskFromUser()
-    if (newPriority == null){
-        colourPrintLn("input not valid priority, return to main menu", Colour.RED)
-        return
-    }
+    val newPriority = getPriorityForTaskFromUser() ?: return
     println("add due date [y/n]")
     if (readlnOrNull() == "y") {
         println("adding dates not yet implemented")
@@ -235,21 +269,30 @@ fun getPriorityForTaskFromUser(): Int?{
     return null
 }
 
+fun colourPrintLn(text: String, colour: Colour) {
+    colourPrint(text, colour)
+    println()
+}
 
-fun colourPrintLn(text:String, colour:Colour) {
+fun colourPrint(text:String, colour:Colour) {
     val escapeSequence = "\u001B["
-    val blackText = "0m"
+    val whiteText = "0m"
     val colourSequence = when (colour) {
         Colour.RED -> "31m"
         Colour.YELLOW -> "33m"
         Colour.GREEN -> "32m"
         Colour.BLUE -> "34m"
         Colour.PURPLE -> "35m"
-        else -> blackText
     }
-    println("$escapeSequence$colourSequence" +
-            text +
-            "$escapeSequence$blackText")
+    if (Settings.colourFormat) {
+        print(
+            "$escapeSequence$colourSequence" +
+                    text +
+                    "$escapeSequence$whiteText"
+        )
+    } else {
+        print(text)
+    }
 }
 
 
