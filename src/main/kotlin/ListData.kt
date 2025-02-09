@@ -42,11 +42,6 @@ class ListData {
         println("item ${taskIn.name} added")
     }
 
-    fun deleteTask(name: String) {
-        val position = getTaskPositionByName(name)
-        position?.let { tasks.removeAt(it) } ?: println("Task $name does not exist")
-    }
-
     fun getTaskPositionByName(name:String): Int? {
         for (i in 0..tasks.size) {
             if (tasks[i].name == name) {
