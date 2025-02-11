@@ -1,6 +1,7 @@
 build
 .idea
 .gradle
+*.json
 
 # Compiled class file
 *.class

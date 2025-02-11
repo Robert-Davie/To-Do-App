@@ -1,8 +1,14 @@
+import kotlinx.serialization.Serializable
+import java.nio.file.Path
+
+
+@Serializable
 class TaskList {
     var title = ""
     var owner = ""
     var currentIDCount = 0
     var tasks = mutableListOf<Task>()
+    var filePathString = "list.json"
     fun addDefaultTasks() {
         tasks.add(Task(
             1,

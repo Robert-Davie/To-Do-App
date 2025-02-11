@@ -1,19 +1,38 @@
+import kotlinx.serialization.Serializable
 import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import kotlinx.serialization.json.Json
+import java.io.FileNotFoundException
 
 
+@Serializable
 object Settings {
     var colourFormat: Boolean = true
+    var defaultListPath = ""
 }
 
 
 fun main(){
-    val taskList = TaskList()
-    taskList.addDefaultTasks()
+    try {
+        val newSettings = openSettingsJson()
+        Settings.colourFormat = newSettings.colourFormat
+        Settings.defaultListPath = newSettings.defaultListPath
+        colourPrintLn("using loaded settings", Colour.BLUE)
+    } catch (e: FileNotFoundException) {
+        colourPrintLn("using default settings", Colour.BLUE)
+    }
+
+    var taskList = try {
+        openListJson(Settings.defaultListPath)
+    } catch (e: FileNotFoundException) {
+        val taskList = TaskList()
+        taskList.addDefaultTasks()
+        taskList
+    }
     while(true) {
         colourPrintLn("To do app menu", Colour.PURPLE)
-        colourPrintLn("=".repeat(60), Colour.BLUE)
+        colourPrintLn("=".repeat(60), Colour.YELLOW)
+        val listName = if (taskList.title == "") {taskList.filePathString} else {taskList.title}
+        colourPrintLn("Current List: $listName", Colour.BLUE)
         colourPrintLn("""
             type...
             1 to view active tasks
@@ -23,7 +42,8 @@ fun main(){
             5 to view a task
             6 to update a task
             7 to delete a task
-            9 to change settings
+            8 to change current to do list 
+            9 to change global settings
             0 to QUIT [or type q]
         """.trimIndent(), Colour.GREEN)
         colourPrintLn("=".repeat(60), Colour.BLUE)
@@ -45,21 +65,29 @@ fun main(){
             }
             "3" -> {
                 markTaskComplete(taskList)
+                saveListToJSon(taskList)
             }
             "4" -> {
                 addTask(taskList)
+                saveListToJSon(taskList)
             }
             "5" -> {
                 viewTask(taskList)
             }
             "6" -> {
                 updateTask(taskList)
+                saveListToJSon(taskList)
             }
             "7" -> {
                 deleteTask(taskList)
+                saveListToJSon(taskList)
+            }
+            "8" -> {
+                taskList = changeTaskList(taskList)
             }
             "9" -> {
                 changeSettings()
+                saveSettingsToJSon()
             }
             "0" -> {
                 println("Application closed")
@@ -74,6 +102,74 @@ fun main(){
             }
         }
     }
+}
+
+fun changeTaskList(taskList: TaskList): TaskList {
+    colourPrintLn("Current to do list: ${taskList.title}", Colour.BLUE)
+    colourPrintLn("Current to do list file path: ${taskList.filePathString}", Colour.BLUE)
+    println("choose different to do list? [y/n]")
+    val input = readlnOrNull()
+    if (input != "y") {
+        if (input != "n") {
+            colourPrintLn("expected y or n", Colour.RED)
+        }
+        colourPrintLn("cancelling change to do list", Colour.RED)
+        return taskList
+    }
+    println("enter path")
+    val newPath = readlnOrNull()
+    try {
+        val result = openListJson(newPath!!)
+        Settings.defaultListPath = newPath
+        saveSettingsToJSon()
+        return result
+    } catch (e: FileNotFoundException) {
+        if (newPath == null) {
+            colourPrintLn("input cannot be null", Colour.RED)
+            colourPrintLn("cancelling change to do list", Colour.RED)
+            return taskList
+        }
+        if (!newPath.endsWith(".json")) {
+            colourPrintLn("input must end with '.json'", Colour.RED)
+            colourPrintLn("cancelling change to do list", Colour.RED)
+            return taskList
+        }
+        println("file does not exist - create new to do list? [y/n]")
+        if (readlnOrNull() == "y") {
+            val newTaskList = TaskList()
+            newTaskList.filePathString = newPath
+            Settings.defaultListPath = newPath
+            saveSettingsToJSon()
+            saveListToJSon(taskList)
+            return newTaskList
+        }
+        colourPrintLn("cancelling change to do list", Colour.RED)
+        return taskList
+    }
+}
+
+fun saveListToJSon(taskList: TaskList) {
+    val jsonString = Json.encodeToString(taskList)
+    val file = File(taskList.filePathString)
+    file.writeText(jsonString)
+    println("Data written to ${taskList.filePathString}")
+}
+
+fun openListJson(path: String): TaskList {
+    val file = File(path)
+    return Json.decodeFromString(file.readText())
+}
+
+fun saveSettingsToJSon() {
+    val jsonString = Json.encodeToString(Settings)
+    val file = File("settings.json")
+    file.writeText(jsonString)
+    println("Settings written to 'settings.json'")
+}
+
+fun openSettingsJson(): Settings {
+    val file = File("settings.json")
+    return Json.decodeFromString(file.readText())
 }
 
 fun changeSettings() {
@@ -292,14 +388,5 @@ fun colourPrint(text:String, colour:Colour) {
         )
     } else {
         print(text)
-    }
-}
-
-
-fun saveList(){
-    try {
-        FileWriter(File("list.txt")).use { it.write("hello") }
-    } catch (e: IOException) {
-        println("an error occurred writing to file")
     }
 }
